@@ -1,10 +1,36 @@
 import { query } from '../db/pool.js';
+import { parseDocument } from '../services/documentParser.js';
+import { chunkText } from '../services/chunker.js';
+import { embedText } from '../services/embeddings.js';
 
-// TODO (next session): wire this up to:
-// 1. services/documentParser.js -> extract raw text from PDF/DOCX/TXT
-// 2. services/chunker.js -> split text into overlapping chunks
-// 3. services/embeddings.js -> embed each chunk via OpenAI
-// 4. Insert document + chunks into Postgres (pgvector)
+// Parses, chunks, and embeds a document, then stores the chunks and flips
+// the document status to "ready" (or "failed" on error). Runs in the
+// background so the upload request can respond immediately.
+async function processDocument(document, filePath) {
+  try {
+    const { text, pageCount } = await parseDocument(filePath, document.mime_type);
+    const chunks = chunkText(text);
+    const embeddings = await embedText(chunks);
+
+    for (let i = 0; i < chunks.length; i++) {
+      await query(
+        `INSERT INTO chunks (document_id, content, chunk_index, embedding)
+         VALUES ($1, $2, $3, $4)`,
+        [document.id, chunks[i], i, `[${embeddings[i].join(',')}]`]
+      );
+    }
+
+    await query('UPDATE documents SET status = $1, page_count = $2 WHERE id = $3', [
+      'ready',
+      pageCount,
+      document.id,
+    ]);
+  } catch (err) {
+    console.error('Document processing failed:', err);
+    await query('UPDATE documents SET status = $1 WHERE id = $2', ['failed', document.id]);
+  }
+}
+
 export async function uploadDocument(req, res, next) {
   try {
     const { workspaceId } = req.params;
@@ -23,10 +49,12 @@ export async function uploadDocument(req, res, next) {
 
     const document = result.rows[0];
 
-    // TODO: kick off async parsing + chunking + embedding pipeline here.
-    // For now, respond immediately; client can poll status or we add websockets later.
+    // Kick off parsing + chunking + embedding in the background.
+    // Client polls GET /api/documents/workspace/:workspaceId to see status flip to "ready".
+    processDocument(document, file.path);
+
     res.status(202).json({
-      message: 'Document uploaded, processing not yet implemented',
+      message: 'Document uploaded, processing started',
       document,
     });
   } catch (err) {

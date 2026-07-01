@@ -34,3 +34,16 @@ export async function getWorkspace(req, res, next) {
     next(err);
   }
 }
+
+export async function deleteWorkspace(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await query('DELETE FROM workspaces WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}

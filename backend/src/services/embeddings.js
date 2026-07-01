@@ -1,16 +1,26 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config/index.js';
 
-const openai = new OpenAI({ apiKey: config.openaiApiKey });
+const genAI = new GoogleGenerativeAI(config.geminiApiKey);
 
-// Embeds a single string or batch of strings.
-// To be implemented next session: batch requests efficiently (OpenAI allows array input).
+// Embeds a single string or batch of strings. Returns a single vector for a
+// string input, or an array of vectors for an array input.
 export async function embedText(textOrArray) {
-  // TODO:
-  // const response = await openai.embeddings.create({
-  //   model: config.embeddingModel,
-  //   input: textOrArray,
-  // });
-  // return response.data.map(d => d.embedding);
-  throw new Error('embedText not yet implemented');
+  const model = genAI.getGenerativeModel({ model: config.embeddingModel });
+
+  if (Array.isArray(textOrArray)) {
+    const { embeddings } = await model.batchEmbedContents({
+      requests: textOrArray.map((text) => ({
+        content: { role: 'user', parts: [{ text }] },
+        outputDimensionality: config.embeddingDimensions,
+      })),
+    });
+    return embeddings.map((e) => e.values);
+  }
+
+  const { embedding } = await model.embedContent({
+    content: { role: 'user', parts: [{ text: textOrArray }] },
+    outputDimensionality: config.embeddingDimensions,
+  });
+  return embedding.values;
 }

@@ -1,11 +1,18 @@
 import { config } from '../config/index.js';
 
 // Splits raw text into overlapping chunks for embedding.
-// To be implemented next session: token-aware splitting (not just char count),
-// ideally respecting paragraph/sentence boundaries where possible.
-
+// chunkSize/overlap are treated as word counts (a rough approximation of tokens).
 export function chunkText(text, { chunkSize = config.chunkSize, overlap = config.chunkOverlap } = {}) {
-  // TODO: replace this naive placeholder with a proper tokenizer-based splitter
-  // (e.g. using gpt-tokenizer or tiktoken) so chunkSize reflects actual tokens, not words.
-  throw new Error('chunkText not yet implemented');
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const chunks = [];
+  const step = chunkSize - overlap;
+  for (let start = 0; start < words.length; start += step) {
+    const chunkWords = words.slice(start, start + chunkSize);
+    chunks.push(chunkWords.join(' '));
+    if (start + chunkSize >= words.length) break;
+  }
+
+  return chunks;
 }

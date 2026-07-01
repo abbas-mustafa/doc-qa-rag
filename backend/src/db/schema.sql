@@ -21,14 +21,14 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 
 -- Chunks of text extracted from documents, each with an embedding vector
--- text-embedding-3-small produces 1536-dimensional vectors
+-- text-embedding-004 (Gemini) produces 768-dimensional vectors
 CREATE TABLE IF NOT EXISTS chunks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   chunk_index INTEGER NOT NULL,
   page_number INTEGER,
-  embedding vector(1536),
+  embedding vector(768),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

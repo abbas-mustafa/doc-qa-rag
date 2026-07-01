@@ -4,9 +4,10 @@ dotenv.config();
 export const config = {
   port: process.env.PORT || 5000,
   databaseUrl: process.env.DATABASE_URL,
-  openaiApiKey: process.env.OPENAI_API_KEY,
-  embeddingModel: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
-  chatModel: process.env.CHAT_MODEL || 'gpt-4o-mini',
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  embeddingModel: process.env.EMBEDDING_MODEL || 'gemini-embedding-001',
+  embeddingDimensions: 768,
+  chatModel: process.env.CHAT_MODEL || 'gemini-2.5-flash',
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB || 10),
   // Chunking strategy
   chunkSize: 500, // approx tokens per chunk
