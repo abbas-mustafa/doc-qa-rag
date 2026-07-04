@@ -41,9 +41,12 @@ CREATE TABLE IF NOT EXISTS chunks (
 );
 ALTER TABLE chunks ADD COLUMN IF NOT EXISTS element_type TEXT DEFAULT 'text';
 
-CREATE INDEX IF NOT EXISTS chunks_embedding_idx
-  ON chunks USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);
+-- Retrieval uses EXACT cosine search over the per-workspace chunk subset. This
+-- guarantees correct recall for a multi-tenant app (every query filters by
+-- workspace). An approximate index (IVFFlat/HNSW) is intentionally NOT used:
+-- with small per-workspace sets it post-filters results away and can miss the
+-- correct chunk. If a single workspace ever grows to millions of chunks, add an
+-- HNSW index and tune ef_search — but validate recall under the workspace filter.
 CREATE INDEX IF NOT EXISTS chunks_document_id_idx ON chunks (document_id);
 
 -- Conversation history per workspace.
