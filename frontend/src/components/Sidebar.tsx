@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, FolderOpen, Plus, MessageSquareText, Trash2, X } from 'lucide-react';
+import { Check, FolderOpen, LogOut, Plus, MessageSquareText, Trash2, X } from 'lucide-react';
 import clsx from 'clsx';
+import toast from 'react-hot-toast';
 import type { Workspace } from '@/lib/types';
+import { useAuth } from './AuthProvider';
 
 interface SidebarProps {
   workspaces: Workspace[];
@@ -28,6 +30,7 @@ export default function Sidebar({
   const [submitting, setSubmitting] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { authConfigured, user, signOut } = useAuth();
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -169,6 +172,28 @@ export default function Sidebar({
           </ul>
         )}
       </div>
+
+      {authConfigured && user && (
+        <div className="flex items-center gap-2 border-t border-white/10 px-4 py-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/40 to-cyan-400/30 text-xs font-medium uppercase">
+            {(user.email ?? '?').charAt(0)}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-xs text-zinc-400">{user.email}</span>
+          <button
+            onClick={async () => {
+              try {
+                await signOut();
+              } catch {
+                toast.error('Failed to sign out');
+              }
+            }}
+            title="Sign out"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

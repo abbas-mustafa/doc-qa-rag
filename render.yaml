@@ -1,0 +1,29 @@
+# Render Blueprint for the DocQA FastAPI backend.
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+# Secrets (sync:false) are entered in the dashboard, never committed.
+services:
+  - type: web
+    name: docqa-api
+    runtime: python
+    plan: free
+    rootDir: backend-py
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /health
+    envVars:
+      # Render's default Python is older; our code needs 3.12+ (asyncio loop_factory).
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: AUTH_ENABLED
+        value: "true"
+      - key: SUPABASE_PROJECT_URL
+        value: https://kssogbmenuhiouxsaame.supabase.co
+      - key: MAX_FILE_SIZE_MB
+        value: "100"
+      # Set these in the dashboard:
+      - key: DATABASE_URL        # Supabase pooler connection string
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS        # your Vercel URL, e.g. https://doc-qa-rag.vercel.app
+        sync: false

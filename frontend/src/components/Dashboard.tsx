@@ -9,8 +9,12 @@ import type { ChatMessage, Workspace, WorkspaceDocument } from '@/lib/types';
 import Sidebar from './Sidebar';
 import DocumentsPanel from './DocumentsPanel';
 import ChatPanel from './ChatPanel';
+import { useAuth } from './AuthProvider';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const storageKey = `docqa:lastWorkspace:${user?.id ?? 'dev'}`;
+
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [workspacesLoading, setWorkspacesLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -27,11 +31,22 @@ export default function Dashboard() {
       .listWorkspaces()
       .then((data) => {
         setWorkspaces(data);
-        if (data.length > 0) setSelectedId(data[0].id);
+        if (data.length > 0) {
+          // Restore the last workspace the user was in, if it still exists.
+          const saved = localStorage.getItem(storageKey);
+          const restored = saved && data.some((w) => w.id === saved) ? saved : data[0].id;
+          setSelectedId(restored);
+        }
       })
       .catch(() => toast.error('Could not reach the backend API'))
       .finally(() => setWorkspacesLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Remember the active workspace across sessions.
+  useEffect(() => {
+    if (selectedId) localStorage.setItem(storageKey, selectedId);
+  }, [selectedId, storageKey]);
 
   const refreshDocuments = useCallback(async (workspaceId: string) => {
     try {
@@ -43,11 +58,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!selectedId) {
-      setDocuments([]);
-      setMessages([]);
-      return;
-    }
+    // Clear immediately on switch so we never flash the previous workspace's data.
+    setDocuments([]);
+    setMessages([]);
+    if (!selectedId) return;
     refreshDocuments(selectedId);
     api
       .getHistory(selectedId)

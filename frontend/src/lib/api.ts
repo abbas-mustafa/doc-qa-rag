@@ -1,58 +1,64 @@
 import type { ChatMessage, Source, Workspace, WorkspaceDocument } from './types';
+import { getAccessToken } from './supabase';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = await getAccessToken();
+  const headers = new Headers(init.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(`${API_URL}${path}`, { ...init, headers });
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Request failed with status ${res.status}`);
+    // FastAPI uses `detail`; our 500 handler uses `error`.
+    throw new Error(body.detail || body.error || `Request failed with status ${res.status}`);
   }
   return res.json();
 }
 
+async function expectOk(res: Response): Promise<void> {
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || body.error || `Request failed with status ${res.status}`);
+  }
+}
+
 export const api = {
   listWorkspaces: () =>
-    fetch(`${API_URL}/api/workspaces`).then((res) => handleResponse<Workspace[]>(res)),
+    authedFetch('/api/workspaces').then((res) => handleResponse<Workspace[]>(res)),
 
   createWorkspace: (name: string) =>
-    fetch(`${API_URL}/api/workspaces`, {
+    authedFetch('/api/workspaces', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     }).then((res) => handleResponse<Workspace>(res)),
 
   listDocuments: (workspaceId: string) =>
-    fetch(`${API_URL}/api/documents/workspace/${workspaceId}`).then((res) =>
+    authedFetch(`/api/documents/workspace/${workspaceId}`).then((res) =>
       handleResponse<WorkspaceDocument[]>(res)
     ),
 
   uploadDocument: (workspaceId: string, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return fetch(`${API_URL}/api/documents/upload/${workspaceId}`, {
+    return authedFetch(`/api/documents/upload/${workspaceId}`, {
       method: 'POST',
       body: formData,
     }).then((res) => handleResponse<{ message: string; document: WorkspaceDocument }>(res));
   },
 
-  deleteDocument: async (id: string) => {
-    const res = await fetch(`${API_URL}/api/documents/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || 'Failed to delete document');
-    }
-  },
+  deleteDocument: (id: string) =>
+    authedFetch(`/api/documents/${id}`, { method: 'DELETE' }).then(expectOk),
 
-  deleteWorkspace: async (id: string) => {
-    const res = await fetch(`${API_URL}/api/workspaces/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || 'Failed to delete workspace');
-    }
-  },
+  deleteWorkspace: (id: string) =>
+    authedFetch(`/api/workspaces/${id}`, { method: 'DELETE' }).then(expectOk),
 
   askQuestion: (workspaceId: string, question: string) =>
-    fetch(`${API_URL}/api/chat/${workspaceId}`, {
+    authedFetch(`/api/chat/${workspaceId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question }),
@@ -63,7 +69,7 @@ export const api = {
     ),
 
   getHistory: (workspaceId: string) =>
-    fetch(`${API_URL}/api/chat/${workspaceId}/history`).then((res) =>
+    authedFetch(`/api/chat/${workspaceId}/history`).then((res) =>
       handleResponse<ChatMessage[]>(res)
     ),
 };
