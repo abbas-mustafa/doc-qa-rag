@@ -23,6 +23,15 @@ DEV_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 _bearer = HTTPBearer(auto_error=False)
 
+# PyJWT validates `exp` when it is present but does not insist it be there, so a
+# token carrying no `exp` at all verifies clean and never expires. Supabase
+# always issues one, and forging a token without it would take the signing key
+# anyway — this is here so the guarantee comes from us rather than from the
+# issuer continuing to be well-behaved.
+#
+# `aud` needs no entry: passing `audience=` already rejects a token that omits it.
+_REQUIRED_CLAIMS = {"require": ["exp", "sub"]}
+
 _jwks_client: jwt.PyJWKClient | None = None
 
 
@@ -40,6 +49,7 @@ def _decode_hs256(token: str) -> dict:
         settings.supabase_jwt_secret,
         algorithms=["HS256"],
         audience="authenticated",
+        options=_REQUIRED_CLAIMS,
     )
 
 
@@ -50,6 +60,7 @@ def _decode_asymmetric(token: str) -> dict:
         signing_key.key,
         algorithms=["ES256", "RS256"],
         audience="authenticated",
+        options=_REQUIRED_CLAIMS,
     )
 
 
