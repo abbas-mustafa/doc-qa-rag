@@ -54,6 +54,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * Tailwind v3's preflight gave buttons `cursor: pointer`; v4 dropped it to match
+ * the browser UA sheet, where <button> is `cursor: default`. Anchors are pointer
+ * natively, so the regression is invisible until you notice every button in the
+ * app — sign in, Continue with Google — feels inert under the mouse.
+ *
+ * :not(:disabled) is the point of the rule, not a flourish: a busy submit button
+ * that still says "clickable" is lying about why nothing happens when you click.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* Flowing gradient text */
 @keyframes gradient-pan {
   0%,
