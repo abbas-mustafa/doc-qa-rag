@@ -44,12 +44,26 @@ class ChatMessage(BaseModel):
     created_at: datetime | None = None
 
 
+class Chat(BaseModel):
+    id: UUID
+    workspace_id: UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChatCreate(BaseModel):
+    title: str | None = None
+
+
+class ChatRename(BaseModel):
+    title: str
+
+
 class AskRequest(BaseModel):
     question: str
 
 
-class AskResponse(BaseModel):
-    answer: str
-    sources: list[Source]
-    question: str
-    workspaceId: UUID
+# Answers have no response model: they stream as Server-Sent Events, whose
+# payloads are framed by hand in routers/chat.py rather than serialised by
+# FastAPI from a return value.

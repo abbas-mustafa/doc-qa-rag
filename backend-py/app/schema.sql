@@ -49,7 +49,10 @@ ALTER TABLE chunks ADD COLUMN IF NOT EXISTS element_type TEXT DEFAULT 'text';
 -- HNSW index and tune ef_search — but validate recall under the workspace filter.
 CREATE INDEX IF NOT EXISTS chunks_document_id_idx ON chunks (document_id);
 
--- Conversation history per workspace.
+-- Conversation history. Originally one implicit log per workspace; `chat_id`
+-- (below) splits it into named threads. `workspace_id` is retained so the
+-- pre-threads backfill has something to group on, and so a message can still be
+-- traced to its workspace in one hop.
 CREATE TABLE IF NOT EXISTS messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -58,3 +61,40 @@ CREATE TABLE IF NOT EXISTS messages (
   sources JSONB,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Threads: many conversations per workspace, titled from the opening question.
+CREATE TABLE IF NOT EXISTS chats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT 'New chat',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+-- Sidebar reads are always "threads in this workspace, newest activity first".
+CREATE INDEX IF NOT EXISTS chats_workspace_updated_idx ON chats (workspace_id, updated_at DESC);
+
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS chat_id UUID REFERENCES chats(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS messages_chat_id_idx ON messages (chat_id, created_at);
+
+-- Backfill: fold each workspace's pre-threads history into one thread, so no
+-- existing conversation is orphaned when reads move to chat_id. Idempotent —
+-- it only ever touches rows that have no chat yet, so re-running schema.sql is
+-- safe and this becomes a no-op once every message is assigned.
+DO $$
+DECLARE
+  ws_id UUID;
+  new_chat_id UUID;
+BEGIN
+  FOR ws_id IN
+    SELECT DISTINCT workspace_id FROM messages
+    WHERE chat_id IS NULL AND workspace_id IS NOT NULL
+  LOOP
+    INSERT INTO chats (workspace_id, title, created_at, updated_at)
+    SELECT ws_id, 'Imported conversation', MIN(created_at), MAX(created_at)
+    FROM messages WHERE workspace_id = ws_id AND chat_id IS NULL
+    RETURNING id INTO new_chat_id;
+
+    UPDATE messages SET chat_id = new_chat_id
+    WHERE workspace_id = ws_id AND chat_id IS NULL;
+  END LOOP;
+END $$;

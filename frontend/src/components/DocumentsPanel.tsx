@@ -18,14 +18,21 @@ const ACCEPTED_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
+// `iconClassName` is kept separate from `className` so the spin applies to the
+// icon alone — folding it into the wrapper rotates the label text with it.
 function statusMeta(status: WorkspaceDocument['status']) {
   switch (status) {
     case 'ready':
-      return { icon: CheckCircle2, label: 'Ready', className: 'text-emerald-400' };
+      return { icon: CheckCircle2, label: 'Ready', className: 'text-accent', iconClassName: '' };
     case 'failed':
-      return { icon: XCircle, label: 'Failed', className: 'text-red-400' };
+      return { icon: XCircle, label: 'Failed', className: 'text-danger', iconClassName: '' };
     default:
-      return { icon: Loader2, label: 'Processing', className: 'text-amber-400 animate-spin' };
+      return {
+        icon: Loader2,
+        label: 'Processing',
+        className: 'text-warn',
+        iconClassName: 'animate-spin',
+      };
   }
 }
 
@@ -68,8 +75,8 @@ export default function DocumentsPanel({ documents, onUpload, onDelete }: Docume
         className={clsx(
           'group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-colors',
           dragActive
-            ? 'border-violet-400 bg-violet-500/10'
-            : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
+            ? 'border-accent-2 bg-accent-2/10'
+            : 'border-line bg-card/40 hover:border-accent-2/40 hover:bg-card/60'
         )}
       >
         <input
@@ -81,24 +88,24 @@ export default function DocumentsPanel({ documents, onUpload, onDelete }: Docume
         />
         <motion.div
           animate={{ y: dragActive ? -4 : 0 }}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-400/20"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-2/15 ring-1 ring-line-2"
         >
           {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-violet-300" />
+            <Loader2 className="h-5 w-5 animate-spin text-accent-2" />
           ) : (
-            <UploadCloud className="h-5 w-5 text-violet-300" />
+            <UploadCloud className="h-5 w-5 text-accent-2" />
           )}
         </motion.div>
-        <p className="text-sm text-zinc-300">
+        <p className="text-sm text-ink">
           {uploading ? 'Uploading…' : 'Drop a file here or click to upload'}
         </p>
-        <p className="text-xs text-zinc-500">PDF, DOCX, or TXT</p>
+        <p className="text-xs text-muted">PDF, DOCX, or TXT</p>
       </div>
 
       <div className="flex flex-col gap-2">
         <AnimatePresence initial={false}>
           {documents.map((doc) => {
-            const { icon: Icon, label, className } = statusMeta(doc.status);
+            const { icon: Icon, label, className, iconClassName } = statusMeta(doc.status);
             return (
               <motion.div
                 key={doc.id}
@@ -106,19 +113,19 @@ export default function DocumentsPanel({ documents, onUpload, onDelete }: Docume
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -12 }}
-                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
+                className="flex items-center gap-3 rounded-xl border border-line bg-card/60 px-4 py-3 backdrop-blur-sm"
               >
-                <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
-                <span className="min-w-0 flex-1 truncate text-sm text-zinc-200">
+                <FileText className="h-4 w-4 shrink-0 text-accent-2/70" />
+                <span className="min-w-0 flex-1 truncate text-sm text-ink">
                   {doc.original_name}
                 </span>
-                <span className={clsx('flex items-center gap-1 text-xs', className)}>
-                  <Icon className="h-3.5 w-3.5" />
+                <span className={clsx('flex items-center gap-1 font-mono text-xs', className)}>
+                  <Icon className={clsx('h-3.5 w-3.5', iconClassName)} />
                   {label}
                 </span>
                 <button
                   onClick={() => onDelete(doc.id)}
-                  className="text-zinc-500 transition-colors hover:text-red-400"
+                  className="text-muted transition-colors hover:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -127,7 +134,7 @@ export default function DocumentsPanel({ documents, onUpload, onDelete }: Docume
           })}
         </AnimatePresence>
         {documents.length === 0 && (
-          <p className="px-1 text-sm text-zinc-500">No documents uploaded yet.</p>
+          <p className="px-1 text-sm text-muted">No documents uploaded yet.</p>
         )}
       </div>
     </div>

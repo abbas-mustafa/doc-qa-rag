@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .db import close_pool, open_pool
-from .routers import chat, documents, workspaces
+from .routers import chat, chats, documents, workspaces
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(asctime)s %(name)s %(message)s")
 logger = logging.getLogger("docqa")
@@ -52,4 +52,5 @@ async def health():
 
 app.include_router(workspaces.router)
 app.include_router(documents.router)
+app.include_router(chats.router)
 app.include_router(chat.router)
