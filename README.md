@@ -75,7 +75,7 @@ DocQA is a full-stack **Retrieval-Augmented Generation (RAG)** application. Each
 | **Backend** | Python 3.12+, FastAPI, Uvicorn, Pydantic |
 | **Parsing / Vision** | PyMuPDF, python-docx, Google Gemini vision (figures + OCR) |
 | **Database** | PostgreSQL + pgvector, psycopg 3 (async), hosted on Supabase |
-| **LLM / Embeddings** | Google Gemini (`gemini-2.5-flash`, `gemini-embedding-001`) via `google-genai` |
+| **LLM / Embeddings** | Google Gemini (`gemini-3.1-flash-lite`, `gemini-embedding-001`) via `google-genai` |
 | **Auth** | Supabase Auth (JWT, verified server-side via JWKS) |
 | **Hosting** | Vercel (frontend) · Render (backend) |
 
@@ -143,7 +143,7 @@ Open **http://localhost:3000**. With Supabase keys set you'll get the login scre
 | `DATABASE_URL` | Postgres connection string (Supabase **pooler / IPv4** host) |
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `EMBEDDING_MODEL` | default `gemini-embedding-001` |
-| `CHAT_MODEL` / `VISION_MODEL` | default `gemini-2.5-flash` |
+| `CHAT_MODEL` / `VISION_MODEL` | default `gemini-3.1-flash-lite` |
 | `MAX_FILE_SIZE_MB` | upload limit (default `100`) |
 | `AUTH_ENABLED` | `true` to enforce Supabase JWTs; `false` for local dev-bypass |
 | `SUPABASE_PROJECT_URL` | your Supabase URL (used to verify JWTs via JWKS) |

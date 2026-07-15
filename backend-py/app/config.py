@@ -24,7 +24,25 @@ class Settings(BaseSettings):
     # context rather than reason from scratch, which is what a small model is good
     # at. Revisit if multi-document synthesis proves weak.
     chat_model: str = "gemini-3.1-flash-lite"
-    vision_model: str = "gemini-2.5-flash"
+    # Ingestion: one call per figure and per OCR'd page, so a single document can
+    # cost _MAX_FIGURES_PER_DOC + _MAX_OCR_PAGES = 70 requests.
+    #
+    # This used to be gemini-2.5-flash, on its own model so a bulk upload couldn't
+    # starve the answer path. That model's free tier turned out to be 20 requests
+    # *per day* (quotaId GenerateRequestsPerDayPerProjectPerModel-FreeTier), i.e.
+    # a third of what one scanned PDF needs — the isolation held, but it isolated
+    # the answer path from a bucket that dies partway through the first upload.
+    # gemini-3.5-flash is also 20/day, and ~8x slower (50s/page vs 6s). Every other
+    # stable model with a separate bucket now 404s or 429s, so quota isolation is
+    # simply not purchasable on the free tier; sharing chat_model's bucket is the
+    # same trade condense_model already makes, and a live bucket beats a dead one.
+    #
+    # Measured, not assumed: identical digit retention (100% of numbers preserved
+    # across pages of a real report, which is what a citation depends on). Overall
+    # transcription similarity is NOT a discriminator here — it swings 38-73% across
+    # repeat runs of the same model on the same page, so it measures formatting
+    # choices, not comprehension. Don't re-litigate this on that metric.
+    vision_model: str = "gemini-3.1-flash-lite"
     # Follow-up query rewriting. Deliberately the same model as chat_model despite
     # sharing its per-model request quota: the alternative with a separate bucket
     # (gemini-3.5-flash) condenses in ~8s, which is slower than the answer itself
