@@ -1,21 +1,80 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens.
+ *
+ * The `--bg`/`--card`/`--ink`/`--muted`/`--accent`/`--line` block is shared
+ * verbatim with the abbas-portfolio repo, which is the source of truth — DocQA
+ * is linked from there as the flagship project, so the two must not drift.
+ *
+ * Two accents, allocated semantically rather than decoratively:
+ *   --accent   (emerald) — DocQA itself: the brand, the assistant, primary actions.
+ *   --accent-2 (sky)     — the user's own content: their messages, their documents.
+ * A chat UI needs two colours to separate "you" from "the system" anyway, so the
+ * product accent earns its place instead of just being decoration.
+ */
 :root {
-  --background: #05060a;
-  --foreground: #f4f4f5;
+  /* shared with abbas-portfolio — keep in sync */
+  --bg: #0a0f0d;
+  --card: #0f1613;
+  --ink: #eaf4ef;
+  --muted: #8aa69b;
+  --accent: #34d399;
+  --line: rgba(52, 211, 153, 0.14);
+
+  /* DocQA product tokens */
+  --surface-2: #141d19;
+  --accent-2: #0ea5e9;
+  --line-2: rgba(14, 165, 233, 0.18);
+  --danger: #f87171;
+  --warn: #fbbf24;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Flowing gradient text */
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+.animate-gradient-text {
+  background-size: 220% auto;
+  animation: gradient-pan 6s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+::selection {
+  background: rgba(52, 211, 153, 0.25);
+  color: #fff;
 }
 
 ::-webkit-scrollbar {
@@ -26,14 +85,24 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(52, 211, 153, 0.18);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(52, 211, 153, 0.3);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  scrollbar-color: rgba(52, 211, 153, 0.18) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -7,14 +7,17 @@ export default function ToasterProvider() {
     <Toaster
       position="top-right"
       toastOptions={{
+        // Mirrors the --card / --ink / --line / --accent / --danger tokens in
+        // globals.css. react-hot-toast takes inline styles, so these can't read
+        // the CSS variables directly — they have to be kept in sync by hand.
         style: {
-          background: 'rgba(24, 24, 30, 0.9)',
-          color: '#f4f4f5',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(15, 22, 19, 0.9)',
+          color: '#eaf4ef',
+          border: '1px solid rgba(52, 211, 153, 0.14)',
           backdropFilter: 'blur(8px)',
         },
-        success: { iconTheme: { primary: '#a78bfa', secondary: '#18181e' } },
-        error: { iconTheme: { primary: '#f87171', secondary: '#18181e' } },
+        success: { iconTheme: { primary: '#34d399', secondary: '#0f1613' } },
+        error: { iconTheme: { primary: '#f87171', secondary: '#0f1613' } },
       }}
     />
   );
